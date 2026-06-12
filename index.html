@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Type Ia Supernova — Interactive Simulation</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Type Ia Supernova</h1>
+    <span class="sub">from the main sequence to the light curve</span>
+    <span id="sim-time"></span>
+  </header>
+
+  <main>
+    <section id="stage-wrap">
+      <canvas id="stage"></canvas>
+    </section>
+
+    <aside>
+      <div class="panel">
+        <h2>Current phase</h2>
+        <div id="info-title"></div>
+        <div id="info-body"></div>
+        <div id="gloss-hint">💡 Click any <span class="term" data-term="solar-mass">underlined
+        term</span> for a definition — try that one.</div>
+      </div>
+      <div class="panel">
+        <h2>Nucleosynthesis</h2>
+        <canvas id="nuc" width="346" height="240"></canvas>
+        <div id="nuc-caption"></div>
+      </div>
+      <div class="panel">
+        <h2>Light curve (B band, absolute magnitude)</h2>
+        <canvas id="lc" width="346" height="225"></canvas>
+      </div>
+
+      <div class="panel" id="background-panel">
+        <h2>Background reading</h2>
+
+        <details>
+          <summary>How is a Type Ia different from other supernovae?</summary>
+          <div class="det-body">
+            <p>Supernova "types" were named for their <i>spectra</i> long before the
+            physics was understood: <b>Type I</b> = no hydrogen lines,
+            <b>Type II</b> = hydrogen present. Type <b>Ia</b> additionally shows a
+            strong silicon absorption line. Mechanically, though, the real divide is
+            different: a Type Ia is a <b>thermonuclear bomb</b>, while Types II, Ib
+            and Ic are all
+            <span class="term" data-term="core-collapse">core-collapse</span>
+            events — Ib/Ic are simply massive stars that lost their outer layers
+            before dying.</p>
+            <table class="cmp">
+              <tr><th></th><th>Type Ia</th><th>II / Ib / Ic (core-collapse)</th></tr>
+              <tr><td>Trigger</td>
+                <td>runaway fusion of a <span class="term" data-term="white-dwarf">white dwarf</span>
+                  pushed to the <span class="term" data-term="chandrasekhar">Chandrasekhar limit</span></td>
+                <td>iron core of a massive star (&gt; 8 <span class="term" data-term="solar-mass">M☉</span>)
+                  collapses under gravity</td></tr>
+              <tr><td>Progenitor</td>
+                <td>old <span class="term" data-term="binary">binary</span>; can be
+                  billions of years old</td>
+                <td>young, short-lived giant star</td></tr>
+              <tr><td>Hydrogen in spectrum</td>
+                <td>none — the white dwarf shed it ages ago</td>
+                <td>II: yes · Ib/Ic: envelope stripped</td></tr>
+              <tr><td>Remnant</td>
+                <td><b>nothing</b> — the star is totally disrupted</td>
+                <td><span class="term" data-term="neutron-star">neutron star</span> or black hole</td></tr>
+              <tr><td>Light powered by</td>
+                <td><span class="term" data-term="ni56">⁵⁶Ni</span> decay almost entirely</td>
+                <td>shock heating + envelope + some ⁵⁶Ni</td></tr>
+              <tr><td>Neutrinos</td>
+                <td>negligible</td>
+                <td>~99% of the energy leaves as neutrinos</td></tr>
+              <tr><td>Peak brightness</td>
+                <td>remarkably uniform, M<sub>B</sub> ≈ −19.3</td>
+                <td>varies by factors of 100+</td></tr>
+              <tr><td>Where found</td>
+                <td>all galaxy types, even old ellipticals</td>
+                <td>only star-forming regions</td></tr>
+            </table>
+          </div>
+        </details>
+
+        <details>
+          <summary>Why are they a "standard candle"?</summary>
+          <div class="det-body">
+            <p>If you know how bright a light <i>really</i> is, how faint it
+            <i>looks</i> tells you its distance (the inverse-square law). Astronomy's
+            hardest problem is finding objects whose true brightness is knowable —
+            <span class="term" data-term="standard-candle">standard candles</span>.</p>
+            <p>Type Ia supernovae qualify for one beautiful reason: <b>every one
+            detonates from nearly the same starting point</b>. The
+            <span class="term" data-term="chandrasekhar">Chandrasekhar limit</span>
+            is a universal constant, so each explosion burns a near-identical fuel
+            load into a near-identical mass of
+            <span class="term" data-term="ni56">⁵⁶Ni</span> — and ⁵⁶Ni sets the peak
+            brightness. Core-collapse supernovae, whose progenitors span a huge range
+            of masses, have no such common starting point.</p>
+            <p>They are not perfectly uniform — but the leftover scatter is
+            <i>predictable</i>: brighter events decline more slowly. Measuring the
+            decline rate (<span class="term" data-term="phillips">Δm₁₅, the Phillips
+            relation</span>) calibrates each event to ~6% distance precision.</p>
+            <p>Add their extreme luminosity — briefly outshining ~5 billion Suns,
+            visible across most of the observable universe — and they extend the
+            <span class="term" data-term="distance-ladder">cosmic distance ladder</span>
+            far beyond any other rung. Comparing their distances against
+            <span class="term" data-term="redshift">redshifts</span> revealed in 1998
+            that the universe's expansion is <i>accelerating</i> — the discovery of
+            <span class="term" data-term="dark-energy">dark energy</span>
+            (2011 Nobel Prize in Physics).</p>
+          </div>
+        </details>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <button id="play">Pause</button>
+    <button id="restart">Restart</button>
+    <div class="speed-box">
+      <label for="speed">Speed</label>
+      <input type="range" id="speed" min="-1" max="1.3" step="0.01" value="0">
+      <span id="speed-val">1.0×</span>
+    </div>
+    <div id="timeline"></div>
+  </footer>
+</div>
+
+<script src="core.js"></script>
+<script src="stage.js"></script>
+<script src="panels.js"></script>
+<script src="glossary.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
