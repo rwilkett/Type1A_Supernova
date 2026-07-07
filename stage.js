@@ -97,10 +97,10 @@ function drawPN(g, W, H, t) {
   ];
   cutStar(g, cx, cy, wdR, layers);
   if (t > 0.5) layerLabels(g, cx, cy, wdR, layers, 1);
-  glow(g, cx, cy, wdR * 4, '#bcd9ff', 0.5);
+  glow(g, cx, cy, wdR * 4, '#bcd9ff', 0.5, 'pn-wd');
 
   stageText(g, 20, 34, 'The envelope drifts away as a planetary nebula…', 14, '#ffb454');
-  stageText(g, 20, 54, '…exposing a ~0.85 M☉ carbon–oxygen white dwarf — Earth-sized,', 12, '#8a92a8');
+  stageText(g, 20, 54, `…exposing a ~${CONSTANTS.WD_INITIAL_MASS} M☉ carbon–oxygen white dwarf — Earth-sized,`, 12, '#8a92a8');
   stageText(g, 20, 70, 'held up by electron degeneracy pressure. No fusion. It just cools.', 12, '#8a92a8');
 }
 
@@ -160,20 +160,20 @@ function drawACC(g, W, H, t) {
   }
   g.fillStyle = '#ffffff';
   g.beginPath(); g.arc(wx, wy, 5, 0, TAU); g.fill();
-  glow(g, wx, wy, 22, '#cfe2ff', 0.9);
+  glow(g, wx, wy, 22, '#cfe2ff', 0.9, 'acc-wd');
   stageText(g, wx, wy + diskR * 0.5 + 22, 'accretion disk → white dwarf', 11, '#8a92a8', 'center');
 
   // mass gauge
-  const mass = lerp(0.85, 1.44, smooth(t));
+  const mass = lerp(CONSTANTS.WD_INITIAL_MASS, CONSTANTS.CHANDRASEKHAR_MASS, smooth(t));
   const bx = W * 0.5 - 150, by = H - 56, bw = 300, bh = 14;
   g.fillStyle = '#1a2030';
   g.fillRect(bx, by, bw, bh);
   g.fillStyle = mass > 1.38 ? '#ff6a4a' : '#7fb4ff';
   g.fillRect(bx, by, bw * (mass - 0.5) / (1.5 - 0.5), bh);
-  const chx = bx + bw * (1.44 - 0.5) / 1.0;
+  const chx = bx + bw * (CONSTANTS.CHANDRASEKHAR_MASS - 0.5) / 1.0;
   g.strokeStyle = '#ffb454'; g.lineWidth = 2;
   g.beginPath(); g.moveTo(chx, by - 6); g.lineTo(chx, by + bh + 6); g.stroke();
-  stageText(g, chx, by - 12, 'Chandrasekhar limit ≈ 1.44 M☉', 11, '#ffb454', 'center');
+  stageText(g, chx, by - 12, `Chandrasekhar limit ≈ ${CONSTANTS.CHANDRASEKHAR_MASS} M☉`, 11, '#ffb454', 'center');
   stageText(g, bx, by + bh + 18, `white dwarf mass: ${mass.toFixed(3)} M☉`, 12, '#d8dce8');
   stageText(g, 20, 34, 'Stolen matter piles onto the white dwarf for millions of years', 14, '#ffb454');
 }
@@ -256,7 +256,7 @@ function drawEXP(g, W, H, t) {
 
   // shocked companion
   const ox = cx + maxR * 1.15, oy = cy - maxR * 0.3;
-  glow(g, ox, oy, 24, '#ffe9b8', 0.9);
+  glow(g, ox, oy, 24, '#ffe9b8', 0.9, 'exp-companion');
   g.fillStyle = '#fff4d6';
   g.beginPath(); g.arc(ox, oy, 9, 0, TAU); g.fill();
   if (R > Math.hypot(ox - cx, oy - cy) * 0.8) {
@@ -312,8 +312,8 @@ function drawLCStage(g, W, H, t) {
   const fr = decayFractions(day);
   const dx = W * 0.5 - 220, dy = H - 96;
   const chain = [
-    { sym: '⁵⁶Ni', t: 't½ = 6.1 d', f: fr.ni, c: '#cfd8ff' },
-    { sym: '⁵⁶Co', t: 't½ = 77.2 d', f: fr.co, c: '#ffd54f' },
+    { sym: '⁵⁶Ni', t: `t½ = ${NI56_HALF_LIFE.toFixed(1)} d`, f: fr.ni, c: '#cfd8ff' },
+    { sym: '⁵⁶Co', t: `t½ = ${CO56_HALF_LIFE.toFixed(1)} d`, f: fr.co, c: '#ffd54f' },
     { sym: '⁵⁶Fe', t: 'stable', f: fr.fe, c: '#ff8a6a' },
   ];
   chain.forEach((n, i) => {

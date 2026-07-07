@@ -89,6 +89,7 @@ button:hover { background: #232c42; }
 }
 .seg.active { border-color: var(--accent); }
 .seg.active .lab { color: var(--text); }
+.seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- background-reading panel ---------- */
 #background-panel details {
@@ -128,6 +129,7 @@ table.cmp td:first-child {
   cursor: help;
 }
 .term:hover { color: #b8d4ff; border-bottom-style: solid; }
+.term:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #gloss-hint {
   margin-top: 8px; padding-top: 7px;
   border-top: 1px solid var(--panel-edge);
@@ -151,3 +153,4 @@ table.cmp td:first-child {
   color: var(--dim); font-size: 16px; line-height: 1; cursor: pointer;
 }
 #gloss-pop .gp-close:hover { color: var(--text); }
+#gloss-pop .gp-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -255,33 +255,49 @@ const GLOSSARY = {
 const glossPop = document.createElement('div');
 glossPop.id = 'gloss-pop';
 glossPop.hidden = true;
+glossPop.setAttribute('role', 'dialog');
+glossPop.setAttribute('aria-modal', 'false');
+glossPop.setAttribute('aria-labelledby', 'gp-title');
 glossPop.innerHTML =
   '<button class="gp-close" aria-label="close">×</button>' +
-  '<div class="gp-title"></div><div class="gp-body"></div>';
+  '<div class="gp-title" id="gp-title"></div><div class="gp-body"></div>';
 document.body.appendChild(glossPop);
+const gpTitle = glossPop.querySelector('.gp-title');
+const gpBody = glossPop.querySelector('.gp-body');
+const gpClose = glossPop.querySelector('.gp-close');
 
 function showGloss(el) {
   const entry = GLOSSARY[el.dataset.term];
   if (!entry) return;
-  glossPop.querySelector('.gp-title').textContent = entry.title;
-  glossPop.querySelector('.gp-body').textContent = entry.def;
+  gpTitle.textContent = entry.title;
+  gpBody.textContent = entry.def;
   glossPop.hidden = false;
+  glossPop._opener = el;
   // position near the clicked term, clamped to the viewport
   const r = el.getBoundingClientRect();
   const pw = 330;
   glossPop.style.left = `${clamp(r.left, 10, window.innerWidth - pw - 10)}px`;
   glossPop.style.top = '0px';
   const ph = glossPop.offsetHeight;
-  glossPop.style.top =
-    `${r.bottom + ph + 18 < window.innerHeight ? r.bottom + 8 : Math.max(10, r.top - ph - 8)}px`;
+  const rawTop = r.bottom + ph + 18 < window.innerHeight ? r.bottom + 8 : r.top - ph - 8;
+  glossPop.style.top = `${clamp(rawTop, 10, window.innerHeight - ph - 10)}px`;
+  gpClose.focus();
+}
+
+function hideGloss() {
+  if (glossPop.hidden) return;
+  glossPop.hidden = true;
+  const opener = glossPop._opener;
+  glossPop._opener = null;
+  if (opener) opener.focus();
 }
 
 document.addEventListener('click', e => {
   const term = e.target.closest('.term');
   if (term) { showGloss(term); return; }
   if (!e.target.closest('#gloss-pop') || e.target.closest('.gp-close'))
-    glossPop.hidden = true;
+    hideGloss();
 });
 document.addEventListener('keydown', e => {
-  if (e.code === 'Escape') glossPop.hidden = true;
+  if (e.code === 'Escape') hideGloss();
 });

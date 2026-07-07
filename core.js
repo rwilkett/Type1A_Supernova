@@ -9,6 +9,25 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = t => t * t * (3 - 2 * t);           // smoothstep
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 
+/* ---------- shared physical constants ------------------------ */
+const CONSTANTS = {
+  CHANDRASEKHAR_MASS: 1.44,  // M☉
+  WD_INITIAL_MASS: 0.85,     // M☉, post-planetary-nebula white dwarf
+  NI56_MEAN_LIFE: 8.77,      // days
+  CO56_MEAN_LIFE: 111.4,     // days
+};
+const NI56_HALF_LIFE = CONSTANTS.NI56_MEAN_LIFE * Math.LN2;  // ≈ 6.1 d
+const CO56_HALF_LIFE = CONSTANTS.CO56_MEAN_LIFE * Math.LN2;  // ≈ 77.2 d
+
+/* ---------- light-curve tunable parameters -------------------- */
+const LC_PARAMS = {
+  peakDay: 19,
+  peakMag: -19.3,
+  riseCurvature: 4.8,
+  tailTimescale: 20,
+  tailLinearRate: 0.011,
+};
+
 /* ---------- phase definitions -------------------------------
    dur = seconds of wall-clock playback at 1× speed            */
 const PHASES = [
@@ -82,6 +101,7 @@ function fitCanvas(cv) {
     cv.height = Math.round(h * DPR);
   }
   const g = cv.getContext('2d');
+  if (!g) { console.error('[fitCanvas] getContext(\'2d\') returned null'); return null; }
   g.setTransform(DPR, 0, 0, DPR, 0, 0);
   return g;
 }
@@ -115,10 +135,18 @@ function drawStars(g, W, H) {
 }
 
 /* ---------- glow & cutaway star ----------------------------- */
-function glow(g, x, y, r, color, alpha = 1) {
-  const gr = g.createRadialGradient(x, y, 0, x, y, r);
-  gr.addColorStop(0, color);
-  gr.addColorStop(1, 'rgba(0,0,0,0)');
+const glowCache = new Map();
+function glow(g, x, y, r, color, alpha = 1, cacheKey = null) {
+  let gr;
+  const cached = cacheKey && glowCache.get(cacheKey);
+  if (cached && cached.x === x && cached.y === y && cached.r === r && cached.color === color) {
+    gr = cached.gradient;
+  } else {
+    gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, color);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    if (cacheKey) glowCache.set(cacheKey, { x, y, r, color, gradient: gr });
+  }
   g.globalAlpha = alpha;
   g.fillStyle = gr;
   g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
@@ -181,11 +209,11 @@ function stageText(g, x, y, txt, size = 13, color = '#d8dce8', align = 'left') {
 /* ---------- light-curve physics ------------------------------
    Peak M_B ≈ −19.3 at ~19 d; Δm15 ≈ 1.1; tail set by Co-56.   */
 function lcMag(d) {
-  const tp = 19, Mp = -19.3;
+  const { peakDay: tp, peakMag: Mp, riseCurvature, tailTimescale, tailLinearRate } = LC_PARAMS;
   if (d <= 0) return -14.0;
-  if (d < tp) return Mp + 4.8 * Math.pow((tp - d) / tp, 2);
+  if (d < tp) return Mp + riseCurvature * Math.pow((tp - d) / tp, 2);
   const p = d - tp;
-  return Mp + 1.9 * (1 - Math.exp(-p / 20)) + 0.011 * p;
+  return Mp + 1.9 * (1 - Math.exp(-p / tailTimescale)) + tailLinearRate * p;
 }
 
 /* current day after explosion, or null before it */
@@ -197,7 +225,7 @@ function currentDay() {
 
 /* Ni-56 → Co-56 → Fe-56 decay fractions (mean lives in days) */
 function decayFractions(d) {
-  const tNi = 8.77, tCo = 111.4;
+  const tNi = CONSTANTS.NI56_MEAN_LIFE, tCo = CONSTANTS.CO56_MEAN_LIFE;
   const lNi = 1 / tNi, lCo = 1 / tCo;
   const ni = Math.exp(-lNi * d);
   const co = lNi / (lCo - lNi) * (Math.exp(-lNi * d) - Math.exp(-lCo * d));

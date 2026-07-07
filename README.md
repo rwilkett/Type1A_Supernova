@@ -9,6 +9,13 @@ powered light curve.
 Open `index.html` in any modern browser. No build step, no server required
 (a static server works too, e.g. `npx http-server`).
 
+> Opening via `file://` works fine for this simulation (everything is inline
+> canvas drawing, no `fetch`/module loading), but some browsers apply stricter
+> CORS and canvas security policies to `file://` pages than to pages served
+> over HTTP. If you ever see a blank canvas or a console security error,
+> serve the directory locally instead (e.g. `npx http-server`) rather than
+> double-clicking `index.html`.
+
 ## What it shows
 
 Seven phases, scrubbable via the timeline at the bottom:

@@ -38,7 +38,7 @@ const INFO = {
     title: '3 · Planetary nebula → white dwarf',
     body: `<p>Pulsations and winds eject the envelope as a glowing
       ${T('planetary-nebula', 'planetary nebula')}. Left behind: a
-      <b>~0.85&nbsp;${T('solar-mass', 'M☉')} carbon–oxygen
+      <b>~${CONSTANTS.WD_INITIAL_MASS}&nbsp;${T('solar-mass', 'M☉')} carbon–oxygen
       ${T('white-dwarf', 'white dwarf')}</b>, about the size of Earth, supported
       not by fusion but by ${T('degeneracy', 'electron degeneracy pressure')}.</p>
       <p class="note">On its own it would simply cool forever. But it is not on its own…</p>`,
@@ -49,7 +49,7 @@ const INFO = {
       ${T('roche-lobe', 'Roche lobe')}. Gas streams through the ${T('l1', 'L1 point')}
       into an ${T('accretion-disk', 'accretion disk')} and settles onto the white
       dwarf, pushing its mass toward the
-      <b>${T('chandrasekhar', 'Chandrasekhar limit')} ≈ 1.44&nbsp;${T('solar-mass', 'M☉')}</b>
+      <b>${T('chandrasekhar', 'Chandrasekhar limit')} ≈ ${CONSTANTS.CHANDRASEKHAR_MASS}&nbsp;${T('solar-mass', 'M☉')}</b>
       — the maximum that ${T('degeneracy', 'electron degeneracy pressure')} can
       support.</p>
       <p class="note">Alternative channel: two white dwarfs spiraling together and
@@ -122,9 +122,27 @@ function nucMode() {
   }
 }
 
+/* ---------- fixed-capacity ring buffer for trail points ------ */
+function makeRing(cap) {
+  return { buf: new Array(cap), cap, head: 0, count: 0 };
+}
+function ringPush(ring, item) {
+  ring.buf[ring.head] = item;
+  ring.head = (ring.head + 1) % ring.cap;
+  if (ring.count < ring.cap) ring.count++;
+}
+function ringClear(ring) {
+  ring.head = 0;
+  ring.count = 0;
+}
+function ringForEach(ring, fn) {
+  const start = (ring.head - ring.count + ring.cap) % ring.cap;
+  for (let i = 0; i < ring.count; i++) fn(ring.buf[(start + i) % ring.cap], i);
+}
+
 /* persistent animation state for the N–Z walkers */
 const nuc = {
-  mode: '', sTok: null, rTok: null, sAcc: 0, rAcc: 0, sTrail: [], rTrail: [], rStage: 0,
+  mode: '', sTok: null, rTok: null, sAcc: 0, rAcc: 0, sTrail: makeRing(60), rTrail: makeRing(90), rStage: 0,
 };
 
 function nzToXY(N, Z, w, h) {
@@ -166,8 +184,9 @@ function drawNZChart(g, w, h, title) {
 }
 
 function drawTrail(g, trail, w, h, color) {
-  trail.forEach((p, i) => {
-    g.globalAlpha = 0.15 + 0.85 * i / trail.length;
+  g.globalAlpha = 1;
+  ringForEach(trail, (p, i) => {
+    g.globalAlpha = 0.15 + 0.85 * i / trail.count;
     const [x, y] = nzToXY(p[0], p[1], w, h);
     g.fillStyle = color;
     g.fillRect(x - 2, y - 2, 4, 4);
@@ -183,9 +202,9 @@ function renderNuc(cv, captionEl) {
   const mode = nucMode();
   if (mode !== nuc.mode) {           // reset walkers on mode change
     nuc.mode = mode;
-    nuc.sTok = { N: 30, Z: 26 }; nuc.sTrail = []; nuc.sAcc = 0;
-    nuc.rTok = { N: 56, Z: 40 }; nuc.rTrail = []; nuc.rAcc = 0; nuc.rStage = 0;
-    captionEl.innerHTML = NUC_CAPTION[mode];
+    nuc.sTok = { N: 30, Z: 26 }; ringClear(nuc.sTrail); nuc.sAcc = 0;
+    nuc.rTok = { N: 56, Z: 40 }; ringClear(nuc.rTrail); nuc.rAcc = 0; nuc.rStage = 0;
+    captionEl.innerHTML = NUC_CAPTION[mode] || 'No caption available for this mode.';
   }
   const dt = 1 / 60 * state.speed * (state.playing ? 1 : 0);
 
@@ -214,11 +233,10 @@ function renderNuc(cv, captionEl) {
     while (nuc.sAcc > 0.55) {                     // slow steps
       nuc.sAcc -= 0.55;
       const tk = nuc.sTok;
-      nuc.sTrail.push([tk.N, tk.Z]);
-      if (nuc.sTrail.length > 60) nuc.sTrail.shift();
+      ringPush(nuc.sTrail, [tk.N, tk.Z]);
       if (valleyZ(tk.N) - tk.Z > 1.6) { tk.N -= 1; tk.Z += 1; }  // β⁻ decay
       else tk.N += 1;                                            // n capture
-      if (tk.N > 140) { nuc.sTok = { N: 30, Z: 26 }; nuc.sTrail = []; }
+      if (tk.N > 140) { nuc.sTok = { N: 30, Z: 26 }; ringClear(nuc.sTrail); }
     }
     drawTrail(g, nuc.sTrail, w, h, '#7fb4ff');
     const [x, y] = nzToXY(nuc.sTok.N, nuc.sTok.Z, w, h);
@@ -234,8 +252,7 @@ function renderNuc(cv, captionEl) {
     const interval = nuc.rStage === 0 ? 0.045 : 0.12;
     while (nuc.rAcc > interval) {
       nuc.rAcc -= interval;
-      nuc.rTrail.push([tk.N, tk.Z]);
-      if (nuc.rTrail.length > 90) nuc.rTrail.shift();
+      ringPush(nuc.rTrail, [tk.N, tk.Z]);
       if (nuc.rStage === 0) {                     // rapid captures, neutron-rich
         if (valleyZ(tk.N) - tk.Z > 13) { tk.N -= 1; tk.Z += 1; }
         else tk.N += 1;
@@ -243,7 +260,7 @@ function renderNuc(cv, captionEl) {
       } else {                                    // β-decay cascade to stability
         tk.N -= 1; tk.Z += 1;
         if (tk.Z >= valleyZ(tk.N)) {
-          nuc.rTok = { N: 56, Z: 40 }; nuc.rTrail = []; nuc.rStage = 0;
+          nuc.rTok = { N: 56, Z: 40 }; ringClear(nuc.rTrail); nuc.rStage = 0;
         }
       }
     }
