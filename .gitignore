@@ -1,3 +1,14 @@
 # OS cruft
 Thumbs.db
 .DS_Store
+
+# Playwright MCP snapshot dumps (ephemeral tool output, not project content)
+.playwright-mcp/
+
+# Ad-hoc verification screenshots taken during manual/agent testing
+01-initial-ms.png
+02-agb.png
+03-acc.png
+04-explosion.png
+05-pn.png
+06-ignition.png
